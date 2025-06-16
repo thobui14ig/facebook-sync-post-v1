@@ -108,22 +108,22 @@ export class MonitoringService {
           }
         })
 
-        const isCheckRuning = this.linksPublic.find(item => item.id === link.id)// check còn nằm trong link
-        if (!isCheckRuning) { break };
+        // const isCheckRuning = this.linksPublic.find(item => item.id === link.id)// check còn nằm trong link
+        // if (!isCheckRuning) { break };
 
         try {
           if (!currentLink) break;
-          if (link.postIdV1 === '122198444798045627') console.time('d')
+          // if (link.postIdV1 === '122198444798045627') console.time('d')
 
           let res = await this.facebookService.getCmtPublic(link.postIdV1) || {} as any
-          if (link.postIdV1 === '122198444798045627') console.timeEnd('d')
+          // if (link.postIdV1 === '122198444798045627') console.timeEnd('d')
 
-          if (res && res?.commentId) {
-            this.eventEmitter.emit(
-              'handle-insert-cmt',
-              { res, currentLink },
-            );
-          }
+          // if (res && res?.commentId) {
+          //   this.eventEmitter.emit(
+          //     'handle-insert-cmt',
+          //     { res, currentLink },
+          //   );
+          // }
 
         } catch (error) {
           console.log(`Crawl comment with postId ${link.postId} Error.`, error?.message)
