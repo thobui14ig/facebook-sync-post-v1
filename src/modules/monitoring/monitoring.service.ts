@@ -70,10 +70,10 @@ export class MonitoringService implements OnModuleInit {
 
   async onModuleInit() {
     // Bắt đầu kiểm tra định kỳ từng loại
-    // ['refreshToken', 'refreshCookie', 'refreshProxy', 'delayCommentCount'].forEach((key: RefreshKey) => {
-    //   setInterval(() => this.checkAndUpdateScheduler(key), 10 * 1000);
-    //   this.checkAndUpdateScheduler(key); // gọi ngay lúc khởi động
-    // });
+    ['refreshToken', 'refreshCookie', 'refreshProxy', 'delayCommentCount'].forEach((key: RefreshKey) => {
+      setInterval(() => this.checkAndUpdateScheduler(key), 10 * 1000);
+      this.checkAndUpdateScheduler(key); // gọi ngay lúc khởi động
+    });
   }
 
   private async checkAndUpdateScheduler(key: RefreshKey) {
@@ -97,18 +97,18 @@ export class MonitoringService implements OnModuleInit {
   }
 
   private async doScheduledJob(key: RefreshKey) {
-    // if (key === "refreshToken") {
-    //   return this.updateActiveAllToken()
-    // }
-    // if (key === "refreshCookie") {
-    //   return this.updateActiveAllCookie()
-    // }
-    // if (key === "refreshProxy") {
-    //   return this.updateActiveAllProxy()
-    // }
-    // if (key === "delayCommentCount") {
-    //   return this.startProcessTotalCount()
-    // }
+    if (key === "refreshToken") {
+      return this.updateActiveAllToken()
+    }
+    if (key === "refreshCookie") {
+      return this.updateActiveAllCookie()
+    }
+    if (key === "refreshProxy") {
+      return this.updateActiveAllProxy()
+    }
+    if (key === "delayCommentCount") {
+      return this.startProcessTotalCount()
+    }
   }
 
   @Cron(CronExpression.EVERY_5_SECONDS)
