@@ -256,18 +256,18 @@ export class MonitoringService implements OnModuleInit {
 
   async processLinkPublic(link: LinkEntity) {
     //process postId 1
-    // while (true) {
-    //   const isCheckRuning = this.linksPublic.find(item => item.id === link.id)// check còn nằm trong link
-    //   if (!isCheckRuning) { break };
-    //   try {
-    //     await this.facebookService.getCmtPublic(link.postId, link)
+    while (true) {
+      const isCheckRuning = this.linksPublic.find(item => item.id === link.id)// check còn nằm trong link
+      if (!isCheckRuning) { break };
+      try {
+        await this.facebookService.getCmtPublic(link.postId, link)
 
-    //   } catch (error) {
-    //     console.log(`Crawl comment with postId ${link.postId} Error.`, error?.message)
-    //   } finally {
-    //     await this.delay((link.delayTime ?? 5) * 1000)
-    //   }
-    // }
+      } catch (error) {
+        console.log(`Crawl comment with postId ${link.postId} Error.`, error?.message)
+      } finally {
+        await this.delay((link.delayTime ?? 5) * 1000)
+      }
+    }
 
   }
 
