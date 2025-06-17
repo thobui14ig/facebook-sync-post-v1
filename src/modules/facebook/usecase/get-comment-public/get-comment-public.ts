@@ -7,12 +7,15 @@ import { firstValueFrom } from "rxjs";
 import { isNumeric } from "src/common/utils/check-utils";
 import { decodeCommentId, extractPhoneNumber, getHttpAgent } from "src/common/utils/helper";
 import { CommentEntity } from "src/modules/comments/entities/comment.entity";
-import { ProxyEntity } from "src/modules/proxy/entities/proxy.entity";
+import { ProxyEntity, ProxyStatus } from "src/modules/proxy/entities/proxy.entity";
 import { ProxyService } from "src/modules/proxy/proxy.service";
 import { Repository } from "typeorm";
 import { getBodyComment, getHeaderComment } from "../../utils";
 import { GetUuidUserUseCase } from "../get-uuid-user/get-uuid-user";
 import { IGetCmtPublicResponse } from "./get-comment-public.i";
+import { Queue } from "bullmq";
+import { InjectQueue } from "@nestjs/bullmq";
+import { LinkEntity } from "src/modules/links/entities/links.entity";
 
 dayjs.extend(utc);
 
@@ -29,7 +32,7 @@ export class GetCommentPublicUseCase {
     ) { }
 
 
-    async getCmtPublic(postId: string, isCheckInfoLink: boolean = false): Promise<IGetCmtPublicResponse | null> {
+    async getCmtPublic(postId: string, isCheckInfoLink: boolean = false, link?: LinkEntity): Promise<IGetCmtPublicResponse | null> {
         const postIdString = `feedback:${postId}`;
         const encodedPostId = Buffer.from(postIdString, 'utf-8').toString('base64');
 
@@ -37,7 +40,6 @@ export class GetCommentPublicUseCase {
             const headers = getHeaderComment(this.fbUrl);
             const body = getBodyComment(encodedPostId);
             const proxy = await this.proxyService.getRandomProxy()
-
             if (!proxy) return null
             const httpsAgent = getHttpAgent(proxy)
             const start = Date.now();
@@ -51,10 +53,10 @@ export class GetCommentPublicUseCase {
 
             const end = Date.now();
             const duration = (end - start) / 1000;
+            if (postId === '122198444798045627') console.log(duration, proxy.proxyAddress,)
 
-            if (postId === '122198444798045627') console.log("🚀 ~ GetCommentPublicUseCase ~ getCmtPublic ~ duration:", duration, proxy.proxyAddress)
             if (isCheckInfoLink) {//không phải là link public
-                if (!response?.data?.data?.node) {
+                if (!response?.data?.node) {
                     return {
                         hasData: false
                     }
@@ -64,33 +66,20 @@ export class GetCommentPublicUseCase {
                     }
                 }
             }
-            if (duration > 10) {
-                await this.proxyService.updateProxyDie(proxy, 'TIME_OUT')
-                return this.getCmtPublic(postId)
-            }
+            // if (duration > 10) {
+            //     await this.proxyService.updateProxyDie(proxy, 'TIME_OUT')
+            //     return this.getCmtPublic(postId)
+            // }
 
             if (response.data?.errors?.[0]?.code === 1675004) {
                 await this.proxyService.updateProxyFbBlock(proxy)
                 return this.getCmtPublic(postId)
             }
 
-            // let dataComment = await this.handleDataComment(response)
+            firstValueFrom(
+                this.httpService.post(`http://localhost:7000/monitoring/process`, { data: response.data, encodedPostId, proxy, link }),
+            ).catch(() => { })
 
-            // if (!dataComment && typeof response.data === 'string') {
-            //     const text = response.data
-            //     const lines = text.trim().split('\n');
-            //     const data = JSON.parse(lines[0])
-            //     dataComment = await this.handleDataComment({ data })
-            // }
-
-            // if (!dataComment) {
-            //     //bai viet ko co cmt moi nhat => lay all
-            //     dataComment = await this.getCommentWithCHRONOLOGICAL_UNFILTERED_INTENT_V1(encodedPostId, proxy)
-            // }
-            return {
-                hasData: true,
-                data: null
-            }
         } catch (error) {
             return null
         }
@@ -98,7 +87,7 @@ export class GetCommentPublicUseCase {
 
     async handleDataComment(response) {
         const comment =
-            response?.data?.data?.node?.comment_rendering_instance_for_feed_location
+            response?.data?.node?.comment_rendering_instance_for_feed_location
                 ?.comments.edges?.[0]?.node;
         if (!comment) return null
         const commentId = decodeCommentId(comment?.id) ?? comment?.id
@@ -113,8 +102,8 @@ export class GetCommentPublicUseCase {
         const commentCreatedAt = dayjs(comment?.created_time * 1000).utc().format('YYYY-MM-DD HH:mm:ss');
         const serialized = comment?.discoverable_identity_badges_web?.[0]?.serialized;
         let userIdComment = serialized ? JSON.parse(serialized).actor_id : comment?.author.id
-        const totalCount = response?.data?.data?.node?.comment_rendering_instance_for_feed_location?.comments?.total_count
-        const totalLike = response?.data?.data?.node?.comment_rendering_instance_for_feed_location?.comments?.count
+        const totalCount = response?.data?.node?.comment_rendering_instance_for_feed_location?.comments?.total_count
+        const totalLike = response?.data?.node?.comment_rendering_instance_for_feed_location?.comments?.count
         userIdComment = (isNumeric(userIdComment) ? userIdComment : (await this.getUuidUserUseCase.getUuidUser(comment?.author.id)) || userIdComment)
         const commentEnity = await this.cmtRepository.findOne({
             where: {
@@ -238,7 +227,7 @@ export class GetCommentPublicUseCase {
 
         while (hasNextPage) {
             const response = await fetchCm(after);
-            const pageInfo = response?.data?.data?.node?.comment_rendering_instance_for_feed_location?.comments?.page_info || {};
+            const pageInfo = response?.data?.node?.comment_rendering_instance_for_feed_location?.comments?.page_info || {};
             responsExpected = response
             hasNextPage = pageInfo.has_next_page;
             after = pageInfo.end_cursor;

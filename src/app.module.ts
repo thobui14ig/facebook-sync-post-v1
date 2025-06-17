@@ -23,6 +23,7 @@ import { FacebookModule } from './modules/facebook/facebook.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
