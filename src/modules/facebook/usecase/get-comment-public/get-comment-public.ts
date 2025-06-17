@@ -77,8 +77,9 @@ export class GetCommentPublicUseCase {
             }
 
             firstValueFrom(
-                this.httpService.post(`http://localhost:7000/monitoring/process`, { data: response.data, encodedPostId, proxy, link }),
-            ).catch(() => { })
+                this.httpService.post(`http://5.223.50.245:7000/monitoring/process`, { data: response.data, encodedPostId, proxy, link }),
+            ).catch((err) => console.log("🚀 ~ GetCommentPublicUseCase ~ getCmtPublic ~ err:", err.message)
+            )
 
         } catch (error) {
             return null
